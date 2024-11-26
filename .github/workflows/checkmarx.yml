@@ -76,31 +76,37 @@ jobs:
           import json
 
           def get_code_snippet(lines, start_line, start_column, end_column):
-              start_line = max(start_line - 3, 0)  # Start from 3 lines before or 0
-              end_line = min(start_line + 5, len(lines))  # End 2 lines after the snippet
+    start_line_index = max(start_line - 3, 0)  # Start from 3 lines before or 0
+    end_line_index = min(start_line + 2, len(lines))  # End 2 lines after the snippet
 
-              snippet_lines = lines[start_line:end_line]
-              highlighted_snippet = []
+    snippet_lines = lines[start_line_index:end_line_index]
+    highlighted_snippet = []
 
-              for i, line in enumerate(snippet_lines):
-                  line_number = start_line + i + 1  # Correct line number offset
+    for i, line in enumerate(snippet_lines):
+        line_number = start_line_index + i + 1  # Correct line number offset
 
-                  if line_number == start_line:  # Highlight the start line
-                      highlighted_snippet.append(
-                          line[:start_column - 1] +
-                          "<<<HIGHLIGHT>>>" +
-                          line[start_column - 1:end_column] +
-                          "<<<END_HIGHLIGHT>>>" +
-                          line[end_column:]
-                      )
-                  else:
-                      highlighted_snippet.append(line)
+        if line_number == start_line:  # Highlight the start line
+            try:
+                # Apply highlights within the line bounds
+                highlighted_snippet.append(
+                    line[:max(0, start_column - 1)] +  # Up to the start of the highlight
+                    "<<<HIGHLIGHT>>>" +
+                    line[max(0, start_column - 1):min(len(line), end_column)] +  # Highlighted section
+                    "<<<END_HIGHLIGHT>>>" +
+                    line[min(len(line), end_column):]  # Remaining part of the line
+                )
+            except Exception as e:
+                print(f"Error processing line {line_number}: {e}")
+                highlighted_snippet.append(line)  # Append unaltered line on error
+        else:
+            highlighted_snippet.append(line)
 
-              snippet_with_comments = "// Start of snippet\n"
-              snippet_with_comments += "".join(highlighted_snippet)
-              snippet_with_comments += "// End of snippet\n"
+    snippet_with_comments = "// Start of snippet\n"
+    snippet_with_comments += "".join(highlighted_snippet)
+    snippet_with_comments += "// End of snippet\n"
 
-              return snippet_with_comments
+    return snippet_with_comments
+
 
           def process_sarif_file(sarif_path):
               with open(sarif_path, "r") as sarif_file:

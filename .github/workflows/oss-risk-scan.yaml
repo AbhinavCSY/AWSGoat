@@ -1,0 +1,48 @@
+name: OSS Risk Scanner
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  oss-risk-scan:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install OpenSSF Scorecard
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/ossf/scorecard/main/install.sh | sh
+          sudo mv scorecard /usr/local/bin/
+
+      - name: Install OSS Risk Scanner
+        run: |
+          pip install .
+
+      - name: Run OSS Risk Scan
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          oss-risk-scan \
+            --repo https://github.com/${{ github.repository }} \
+            --token $GITHUB_TOKEN \
+            --out oss-risk-report.json
+
+      - name: Upload Risk Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: oss-risk-report
+          path: oss-risk-report.json

@@ -26,17 +26,17 @@ jobs:
           sudo chmod +x /usr/local/bin/scorecard
           scorecard version
 
-      # Run Scorecard (JSON output)
+      # Run Scorecard (JSON output via stdout redirect)
       - name: Run OpenSSF Scorecard
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           scorecard \
             --repo https://github.com/${{ github.repository }} \
-            --format json \
-            --out scorecard.json
+            --format=json \
+            > scorecard.json
 
-      # Generate HTML report
+      # Generate human-readable HTML report
       - name: Generate HTML report
         run: |
           python scripts/scorecard_to_html.py

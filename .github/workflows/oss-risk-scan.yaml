@@ -31,13 +31,11 @@ jobs:
           python-version: "3.11"
 
       # ----------------------------------------
-      # 3. Install OpenSSF Scorecard (CORRECT)
+      # 3. Install OpenSSF Scorecard (CORRECT + SAFE)
       # ----------------------------------------
       - name: Install OpenSSF Scorecard
+        shell: bash
         run: |
           set -e
 
-          SCORECARD_VERSION="5.0.0"
-          ASSET="scorecard_${SCORECARD_VERSION}_linux_amd64.tar.gz"
-
-          echo "Downloading OpenSSF Scorecard ${
+          SCORECARD

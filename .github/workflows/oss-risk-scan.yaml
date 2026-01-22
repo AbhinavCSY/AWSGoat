@@ -12,29 +12,54 @@ jobs:
 
     permissions:
       contents: read
+      pull-requests: write
       security-events: write
 
     steps:
-      - name: Checkout Repository
+      # ------------------------------------------------
+      # 1. Checkout code
+      # ------------------------------------------------
+      - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ------------------------------------------------
+      # 2. Setup Python
+      # ------------------------------------------------
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
+      # ------------------------------------------------
+      # 3. Install OpenSSF Scorecard (STABLE METHOD)
+      # ------------------------------------------------
       - name: Install OpenSSF Scorecard
         run: |
+          set -e
+
           SCORECARD_VERSION="v5.0.0"
-          curl -L -o \
+
+          echo "Downloading OpenSSF Scorecard ${SCORECARD_VERSION}"
+          curl -L -o scorecard \
             https://github.com/ossf/scorecard/releases/download/${SCORECARD_VERSION}/scorecard-linux-amd64
-          sudo mv scorecard /usr/local/bin/
+
+          chmod +x scorecard
+          sudo mv scorecard /usr/local/bin/scorecard
+
+          echo "Installed Scorecard:"
           scorecard --version
 
+      # ------------------------------------------------
+      # 4. Install OSS Risk Scanner package
+      # ------------------------------------------------
       - name: Install OSS Risk Scanner
         run: |
+          pip install --upgrade pip
           pip install .
 
+      # ------------------------------------------------
+      # 5. Run OSS Risk Scan
+      # ------------------------------------------------
       - name: Run OSS Risk Scan
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -44,8 +69,15 @@ jobs:
             --token $GITHUB_TOKEN \
             --out oss-risk-report.json
 
-      - name: Upload Risk Report Artifact
+      # ------------------------------------------------
+      # 6. Upload report as artifact
+      # ------------------------------------------------
+      - name: Upload Risk Report
         uses: actions/upload-artifact@v4
         with:
           name: oss-risk-report
           path: oss-risk-report.json
+
+      # ------------------------------------------------
+      # 7. (OPTIONAL) Fail build if OpenSSF score too low
+      # -------------------------------

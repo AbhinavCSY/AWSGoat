@@ -1,4 +1,4 @@
-name: OSS Risk Scanner
+name: OpenSSF Scorecard Report
 
 on:
   push:
@@ -6,31 +6,42 @@ on:
   workflow_dispatch:
 
 jobs:
-  oss-risk-scan:
+  scorecard:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout repository
       - uses: actions/checkout@v4
 
-      # 2. Setup Python
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      # 3. Install OpenSSF Scorecard (OFFICIAL + STABLE)
       - name: Install OpenSSF Scorecard
         run: |
           set -e
-          curl -fL \
-            https://github.com/ossf/scorecard/releases/download/v5.0.0/scorecard_5.0.0_linux_amd64.tar.gz \
-            -o scorecard.tgz
-
+          curl -fL https://github.com/ossf/scorecard/releases/download/v5.0.0/scorecard_5.0.0_linux_amd64.tar.gz -o scorecard.tgz
           tar -xzf scorecard.tgz
           sudo mv scorecard-linux-amd64 /usr/local/bin/scorecard
           sudo chmod +x /usr/local/bin/scorecard
-
-          # Correct way to check version
           scorecard version
 
-      # 4
+      - name: Run Scorecard (JSON)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          scorecard run \
+            --repo https://github.com/${{ github.repository }} \
+            --format json \
+            --out scorecard.json
+
+      - name: Generate HTML Report
+        run: |
+          python scripts/scorecard_to_html.py
+
+      - name: Upload Scorecard Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: scorecard-report
+          path: |
+            scorecard.json
+            scorecard-report.html

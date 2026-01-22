@@ -16,6 +16,7 @@ jobs:
         with:
           python-version: "3.11"
 
+      # Install OpenSSF Scorecard
       - name: Install OpenSSF Scorecard
         run: |
           set -e
@@ -25,19 +26,22 @@ jobs:
           sudo chmod +x /usr/local/bin/scorecard
           scorecard version
 
-      - name: Run Scorecard (JSON)
+      # Run Scorecard (JSON output)
+      - name: Run OpenSSF Scorecard
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          scorecard run \
+          scorecard \
             --repo https://github.com/${{ github.repository }} \
             --format json \
             --out scorecard.json
 
-      - name: Generate HTML Report
+      # Generate HTML report
+      - name: Generate HTML report
         run: |
           python scripts/scorecard_to_html.py
 
+      # Upload artifacts
       - name: Upload Scorecard Report
         uses: actions/upload-artifact@v4
         with:

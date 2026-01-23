@@ -17,16 +17,10 @@ jobs:
       - name: Create reports directory
         run: mkdir -p reports
 
-      - name: Generate OSS Risk Report (Markdown)
+      - name: Generate OSS Risk Report
         run: |
           cat << 'EOF' > reports/oss-package-risk-report.md
           # OSS Package Risk Assessment Report
-
-          ## Overview
-          This report summarizes the risk posture of the analyzed open-source package
-          based on reliability, contributor behavior, and integrity signals.
-
-          ---
 
           ## 📊 Risk Summary
 
@@ -37,41 +31,16 @@ jobs:
           | Package Reliability            | 10/10 | 🟢 No Risk |
           | Behavioural Integrity          | N/A   | 🟢 No Risk |
 
-          ---
-
-          ## 🧠 Interpretation
-
-          - **Package Reliability Indicators**  
-            Strong stability and maintenance signals observed.
-
-          - **Contributor Reputation**  
-            Contributors show trusted and consistent behavior.
-
-          - **Package Reliability**  
-            No signs of abandonment or instability.
-
-          - **Behavioural Integrity**  
-            No malicious or anomalous behavior detected.
-
-          ---
-
           ## ✅ Final Assessment
-
           **Overall Risk Level: 🟢 LOW**
 
-          This package is considered safe for production use
-          based on the current assessment.
-
-          ---
-
-          ## 🕒 Metadata
-
-          - Report Generated: $(date -u)
-          - Source: OSS Scorecard / Internal Risk Engine
+          _Generated on $(date -u)_
           EOF
 
-      - name: Upload Risk Report Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: oss-package-risk-report
-          path: reports/oss-package-risk-report.md
+      - name: Commit report to repository
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add reports/oss-package-risk-report.md
+          git commit -m "Add OSS package risk report" || echo "No changes to commit"
+          git push

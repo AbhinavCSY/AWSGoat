@@ -1,46 +1,57 @@
-name: OSS Package Risk Report
+name: OSS Package Risk Report (Scorecard)
 
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
-  generate-risk-report:
+  scorecard:
     runs-on: ubuntu-latest
 
+    permissions:
+      security-events: write
+      contents: write
+
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v4
+
+      # ✅ THIS IS THE SCORECARD RUNNER
+      - name: Run OpenSSF Scorecard
+        uses: ossf/scorecard-action@v2.3.1
+        with:
+          results_file: scorecard.json
+          results_format: json
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create reports directory
         run: mkdir -p reports
 
-      - name: Generate OSS Risk Report
+      - name: Convert Scorecard JSON → Markdown
         run: |
-          cat << 'EOF' > reports/oss-package-risk-report.md
-          # OSS Package Risk Assessment Report
+          SCORE=$(jq '.score' scorecard.json)
 
-          ## 📊 Risk Summary
+          cat << EOF > reports/oss-scorecard-report.md
+          # OpenSSF Scorecard Report
 
-          | Category                       | Score | Risk Level |
-          |--------------------------------|-------|------------|
-          | Package Reliability Indicators | 10/10 | 🟢 No Risk |
-          | Contributor Reputation         | 10/10 | 🟢 No Risk |
-          | Package Reliability            | 10/10 | 🟢 No Risk |
-          | Behavioural Integrity          | N/A   | 🟢 No Risk |
+          ## 🔐 Overall Score
+          **Score:** ${SCORE}/10
 
-          ## ✅ Final Assessment
-          **Overall Risk Level: 🟢 LOW**
-
-          _Generated on $(date -u)_
+          ## 📊 Checks Summary
+          | Check | Score | Reason |
+          |------|-------|--------|
           EOF
 
-      - name: Commit report to repository
+          jq -r '.checks[] | "| \(.name) | \(.score) | \(.reason) |"' scorecard.json \
+            >> reports/oss-scorecard-report.md
+
+          echo -e "\n_Generated on $(date -u)_\n" >> reports/oss-scorecard-report.md
+
+      - name: Commit report
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add reports/oss-package-risk-report.md
-          git commit -m "Add OSS package risk report" || echo "No changes to commit"
+          git add reports/oss-scorecard-report.md
+          git commit -m "Add OpenSSF Scorecard report" || echo "No changes"
           git push
